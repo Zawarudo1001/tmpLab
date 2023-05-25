@@ -92,9 +92,9 @@ def updateOrCreateRecord(data=None):
         if path:
             try:
                 Img = PhotoImage(file=path, format='png')
-                F = open(path, "rb")
-                imageBuffer = F.read()
-                F.close()
+                with open(path, "rb") as F:
+                    imageBuffer = F.read()
+                    F.close()
                 Miniature = Img.subsample(4,4)
                 Icon.create_image(0,0, image=Miniature, anchor=NW, tag="icon")
                 Icon.image = Miniature
@@ -155,6 +155,8 @@ def deleteData(event=None):
             selectedText.place_forget()
             showinfo(title="Удаление записи", message="Запись успешно удалена!")
             selectAll()
+        else:
+            memberlist.select_set(choosen)
 
 
 def listSelect(event=None):
@@ -207,7 +209,7 @@ def logIn():
     login = config['main']['user']
     password = config['main']['keyuser']
 
-    def checkPass():
+    def checkPass(event=None):
         if login == inpLogin.get() and password == inpPassword.get():
             authorisationForm.destroy()
         else:
@@ -238,6 +240,7 @@ def logIn():
     entryPassword.place(x=loginWidth/2-62, y=85)
     Button(authorisationForm, text="Вход", width=10, command=checkPass).place(x=loginWidth/2-40,y=loginHeight - 40)
     authorisationForm.protocol('WM_DELETE_WINDOW', exit)
+    authorisationForm.bind('<Return>', checkPass)
     authorisationForm.mainloop()
 
 logIn()
@@ -258,8 +261,6 @@ mainmenu = Menu()
 mainForm.config(menu=mainmenu)
 
 menu1 = Menu(tearoff=False)
-menu1.add_command(label='Найти...')
-menu1.add_separator()
 menu1.add_command(label='Добавить', command=insertData, accelerator='F2')
 menu1.add_command(label='Удалить', command=deleteData, accelerator='F3')
 menu1.add_command(label='Изменить', command=updateData, accelerator='F4')
