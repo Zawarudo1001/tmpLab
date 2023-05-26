@@ -14,8 +14,11 @@ redactorWidth = 496
 redactorHeight = 360
 loginWidth = 300
 loginHeight = 180
+searchWidth = 300
+searchHeight = 100
 
 fViewInfo = False
+fViewSearch = False
 info = "База данных 'Герои СССР'\n(c) Timokhin.V.M., Russia, 2023\n\ntimohinvaceslav4@gmail.com"
 manual = "База данных Герои СССР\nПозволяет: добавлять / удалять / изменять информацию.\n" \
          "Клавиши программы:\nF1 - вызов справки по программе\nF2 - добавить в базу данных\n" \
@@ -37,9 +40,55 @@ def cmQuit(event=None):
 
 def selectAll():
     global querydata, namelist
-    cursor1.execute("SELECT * FROM table1")
+    cursor1.execute("SELECT id, fio FROM table1")
     querydata = cursor1.fetchall()
     namelist = [querydata[i][1] for i in range(len(querydata))]
+
+
+def search():
+    global querydata, fViewSearch
+    def submit():
+        found = False
+        FIO = inpFIO.get()
+        for i in range(0, len(namelist)):
+            if namelist[i] == FIO:
+                found = True
+                cur = memberlist.curselection()
+                if len(cur) > 0:
+                    memberlist.select_clear(cur)
+                memberlist.select_set(i)
+                listSelect()
+                break
+        if not found:
+            showerror("Ошибка!", "Не найдено ни одной записи")
+        global fViewSearch
+        searchForm.destroy()
+        fViewSearch = False
+
+    def close():
+        global fViewSearch
+        searchForm.destroy()
+        fViewSearch = False
+
+    if not fViewSearch:
+        searchForm = Toplevel()
+        searchForm.focus_set()
+        w = searchForm.winfo_screenwidth()
+        h = searchForm.winfo_screenheight()
+        x_help = (w/2) - (searchWidth/2)
+        y_help = (h/2) - (searchHeight/2)
+        searchForm.geometry('%dx%d+%d+%d' % (searchWidth, searchHeight, x_help, y_help - 40))
+        searchForm.resizable(height=False, width=False)
+        searchForm.title('Поиск')
+        content = ttk.Label(searchForm, text="Введите ФИО:", padding=10)
+        content.pack(anchor=NW)
+        inpFIO = StringVar()
+        inp = Entry(searchForm, textvariable=inpFIO, width=47)
+        inp.place(x=6, y=30)
+        inp.focus_set()
+        searchForm.protocol('WM_DELETE_WINDOW', close)
+        Button(searchForm, text='Поиск', command=submit).place(x=searchWidth-55, y=searchHeight-35)
+        fViewSearch = True
 
 
 def updateData(event=None):
@@ -95,7 +144,7 @@ def updateOrCreateRecord(data=None):
                 with open(path, "rb") as F:
                     imageBuffer = F.read()
                     F.close()
-                Miniature = Img.subsample(4,4)
+                Miniature = Img.subsample(8,8)
                 Icon.create_image(0,0, image=Miniature, anchor=NW, tag="icon")
                 Icon.image = Miniature
             except Exception:
@@ -125,12 +174,16 @@ def updateOrCreateRecord(data=None):
     Icon = Canvas(RefreshData, height=100, width=100)
 
     if data:
-        imageBuffer = data[3]
-        curMiniature = None if not imageBuffer else PhotoImage(data=imageBuffer, format='png').subsample(4,4)
+        imageBlobQuery = f"SELECT image, item FROM table1 WHERE id={data[0]}"
+        cursor1.execute(imageBlobQuery)
+        dataImgText = cursor1.fetchall()
+        imageBuffer = dataImgText[0][0]
+
+        curMiniature = None if not imageBuffer else PhotoImage(data=imageBuffer, format='png').subsample(8,8)
         Icon.create_image(0,0,image=curMiniature, anchor=NW)
         Icon.image = curMiniature
         entryFIO.insert(0, data[1])
-        textData.insert(END, data[2])
+        textData.insert(END, dataImgText[0][1])
 
     Icon.place(x=150, y=250)
     imageSpace = Label(RefreshData, text='Изображение:')
@@ -164,13 +217,17 @@ def listSelect(event=None):
     if len(choosenIndex) == 0:
         return
     choosenIndex = choosenIndex[0]
-    image = querydata[choosenIndex][3]
+    imageBlobQuery = f"SELECT image, item FROM table1 WHERE id={querydata[choosenIndex][0]}"
+    cursor1.execute(imageBlobQuery)
+    dataImgText = cursor1.fetchall()
+    image = dataImgText[0][0]
     selectedImage = None if not image else PhotoImage(data=image, format='png').subsample(2,2)
     mainCanvas.create_image(0, 0, image=selectedImage, anchor=NW)
     mainCanvas.image = selectedImage
     mainCanvas.place(x=200, y=10, width=380, height=400)
     selectedText.delete(1.0, END)
-    selectedText.insert(END, querydata[choosenIndex][2])
+
+    selectedText.insert(END, dataImgText[0][1])
     selectedText.place(x=590, y=10, width=200, height=450)
 
 
@@ -219,10 +276,8 @@ def logIn():
 
     authorisationForm = Tk()
     authorisationForm.resizable(width=False, height=False)
-    screen_width = authorisationForm.winfo_screenwidth()
-    screen_height = authorisationForm.winfo_screenheight()
-    x = (screen_width / 2) - (loginWidth / 2)
-    y = (screen_height / 2) - (loginHeight / 2)
+    x = (authorisationForm.winfo_screenwidth() / 2) - (loginWidth / 2)
+    y = (authorisationForm.winfo_screenheight() / 2) - (loginHeight / 2)
     authorisationForm.geometry('%dx%d+%d+%d' % (loginWidth, loginHeight, x, y - 40))
     authorisationForm.title("Войти")
     inpLogin = StringVar()
@@ -243,7 +298,7 @@ def logIn():
     authorisationForm.bind('<Return>', checkPass)
     authorisationForm.mainloop()
 
-logIn()
+#logIn()
 
 mainForm = Tk()
 mainForm.title("Герои СССР")
@@ -261,6 +316,8 @@ mainmenu = Menu()
 mainForm.config(menu=mainmenu)
 
 menu1 = Menu(tearoff=False)
+menu1.add_command(label='Найти...', command=search)
+menu1.add_separator()
 menu1.add_command(label='Добавить', command=insertData, accelerator='F2')
 menu1.add_command(label='Удалить', command=deleteData, accelerator='F3')
 menu1.add_command(label='Изменить', command=updateData, accelerator='F4')
