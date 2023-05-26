@@ -47,7 +47,7 @@ def selectAll():
 
 def search():
     global querydata, fViewSearch
-    def submit():
+    def submit(event=None):
         found = False
         FIO = inpFIO.get()
         for i in range(0, len(namelist)):
@@ -65,7 +65,7 @@ def search():
         searchForm.destroy()
         fViewSearch = False
 
-    def close():
+    def close(event=None):
         global fViewSearch
         searchForm.destroy()
         fViewSearch = False
@@ -175,7 +175,7 @@ def updateOrCreateRecord(data=None):
     Icon = Canvas(RefreshData, height=100, width=100)
 
     if data:
-        imageBlobQuery = f"SELECT image, item FROM table1 WHERE id={data[0]}"
+        imageBlobQuery = f"SELECT image FROM table1 WHERE id={data[0]}"
         cursor1.execute(imageBlobQuery)
         dataImgText = cursor1.fetchall()
         imageBuffer = dataImgText[0][0]
@@ -184,7 +184,7 @@ def updateOrCreateRecord(data=None):
         Icon.create_image(0,0,image=curMiniature, anchor=NW)
         Icon.image = curMiniature
         entryFIO.insert(0, data[1])
-        textData.insert(END, dataImgText[0][1])
+        textData.insert(END, selectedText.get(1.0, END))
 
     Icon.place(x=150, y=250)
     imageSpace = Label(RefreshData, text='Изображение:')
