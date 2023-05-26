@@ -298,7 +298,7 @@ def logIn():
     authorisationForm.bind('<Return>', checkPass)
     authorisationForm.mainloop()
 
-#logIn()
+logIn()
 
 mainForm = Tk()
 mainForm.title("Герои СССР")
