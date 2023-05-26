@@ -88,6 +88,7 @@ def search():
         inp.focus_set()
         searchForm.protocol('WM_DELETE_WINDOW', close)
         Button(searchForm, text='Поиск', command=submit).place(x=searchWidth-55, y=searchHeight-35)
+        searchForm.bind('<Return>', submit)
         fViewSearch = True
 
 
